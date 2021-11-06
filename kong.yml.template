@@ -1,0 +1,54 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+  - name: users-service
+    url: REPLACE THIS WITH THE URL OF YOUR USERS SERVICE
+    routes:
+      - paths:
+        - /users
+  - name: orders-service
+    url: REPLACE THIS WITH THE URL OF YOUR ORDERS SERVICE
+    routes:
+      - paths:
+        - /orders
+routes:
+  - name: login-route
+    paths:
+      - /login
+plugins:
+  - name: aws-lambda
+    route: login-route
+    config:
+      aws_key: AWS IAM USER ACCESS KEY
+      aws_secret: AWS IAM SECRET ACCESS KEY
+      aws_region: AWS REGION WHERE LAMBDA RESIDES
+      function_name: AWS LAMBDA NAME
+      forward_request_body: true
+  - name: jwt
+    service: users-service
+    config:
+     secret_is_base64: false
+     run_on_preflight: true
+     key_claim_name: kid
+  - name: jwt
+    service: orders-service
+    config:
+     secret_is_base64: false
+     run_on_preflight: true
+     key_claim_name: kid
+  - name: rate-limiting
+    service: users-service
+    config:
+      minute: 3
+      policy: local
+  - name: rate-limiting
+    service: orders-service
+    config:
+      minute: 10
+      policy: local
+consumers:
+  - username: auth-service-consumer
+jwt_secrets:
+  - consumer: auth-service-consumer
+    secret: JWT SECRET OF YOUR CHOOSING
